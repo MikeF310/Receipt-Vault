@@ -1,0 +1,23 @@
+{
+  "merchant_name": "IHOP",
+  "date": "2016-02-29",
+  "total_amount": 24.96,
+  "items": [
+    {
+      "item_name": "Splashberry",
+      "price": 2.79
+    },
+    {
+      "item_name": "Sierra Mist",
+      "price": 2.39
+    },
+    {
+      "item_name": "Big Steak",
+      "price": 9.99
+    },
+    {
+      "item_name": "Colorado",
+      "price": 9.79
+    }
+  ]
+}
