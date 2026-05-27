@@ -1,1 +1,0 @@
-docker exec -it receipt-db psql -U postgres -d receipts

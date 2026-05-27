@@ -1,5 +1,5 @@
 #!/bin/bash
-source .env
+source git.env
 set -e
 
 # This script stands up EC2 and S3 Buckets
@@ -50,5 +50,6 @@ ssh -i "$KEY_PATH" \
     -o StrictHostKeyChecking=no \
     -o UserKnownHostsFile=/dev/null \
     "$REMOTE_USER@$NEW_IP" "sudo docker exec -i receipt_postgres_db psql -U postgres -d receipts" < "$LOCAL_BACKUP"
+
 
 echo "🎉 Migration complete! Your cloud architecture is completely restored."

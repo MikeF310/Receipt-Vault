@@ -87,31 +87,40 @@ resource "aws_instance" "receipt_server" {
     delete_on_termination = true
     }   
     user_data = <<-EOF
-              #!/bin/bash
-              sudo apt-get update -y
-              sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
+                #!/bin/bash
+                sudo apt-get update -y
+                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
-              # Install Docker
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-              echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-              sudo apt-get update -y
-              sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+                # Install Docker
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                sudo apt-get update -y
+                sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-              # Install Docker Compose V2
-              mkdir -p ~/.docker/cli-plugins/
-              curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-              chmod +x ~/.docker/cli-plugins/docker-compose
-              sudo ln -s ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+                # Install Docker Compose V2
+                mkdir -p ~/.docker/cli-plugins/
+                curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+                chmod +x ~/.docker/cli-plugins/docker-compose
+                sudo ln -s ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
-              # Clone private repository utilizing the dynamic variable context
-              cd /home/ubuntu
-              git clone https://oauth2:${var.github_token}@github.com/MikeF310/Receipt-Vault.git
-              cd Receipt-Vault
+                # Clone private repository utilizing the dynamic variable context
+                cd /home/ubuntu
+                git clone https://oauth2:${var.github_token}@github.com/MikeF310/Receipt-Vault.git
+                cd Receipt-Vault
+            
 
-              # Create environment baseline and boot cluster
-              echo "GEMINI_API_KEY=placeholder_until_cicd" > .env
-              sudo docker-compose up -d
-              EOF
+
+                # 1. Create the docker group if it doesn't exist
+                sudo groupadd -f docker
+                # 2. Assign the ubuntu user to the docker group
+                sudo usermod -aG docker ubuntu
+                # 3. Refresh the group ownership on the docker socket file dynamically
+                sudo chown root:docker /var/run/docker.sock
+                
+                # Create environment baseline and boot cluster
+                echo "GEMINI_API_KEY=placeholder_until_cicd" > .env
+                sudo docker-compose up -d
+                EOF
 
   tags = {
     Name = "receipt-vault-app-server"

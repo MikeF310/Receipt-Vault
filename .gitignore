@@ -1,7 +1,8 @@
 venv/
 .env
+git.env
 db_config.env
-
+aws.env
 # Terraform
 .terraform/
 *.tfstate
