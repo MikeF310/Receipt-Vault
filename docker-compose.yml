@@ -1,0 +1,42 @@
+
+services:
+  # 1. Database Service
+  db:
+    image: postgres:16-alpine
+    container_name: receipt_postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mike2004
+      POSTGRES_DB: receipts
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # 2. FastAPI Backend Service
+  backend:
+    build: ./backend
+    container_name: receipt_fastapi_backend
+    ports:
+      - "8000:8000"
+    environment:
+      # We reference the database service name "db" instead of "localhost"
+      - DATABASE_URL=postgresql://postgres:mike2004@db:5432/receipts
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+    restart: always
+
+  # 3. React Frontend Service
+  frontend:
+    build: ./Receipt_Upload
+    container_name: receipt_react_frontend
+    ports:
+      - "3000:80"  # Maps port 3000 on your laptop to port 80 inside Nginx
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_data:  # Defines the persistent named volume for your database data

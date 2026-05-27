@@ -1,7 +1,5 @@
 import os
-import cv2
 import subprocess
-import numpy as np
 from google import genai
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -9,18 +7,20 @@ from typing import List
 from dotenv import load_dotenv
 import re
 load_dotenv()
+import psycopg
+
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-
+def get_connection():
+    return psycopg.connect(DATABASE_URL)
 
 
 class LineItem(BaseModel):
-    id: str
     item_name: str
     price: float
 
 class ReceiptData(BaseModel):
-    id: str
     merchant_name: str = Field(description="Name of the store")
     date: str = Field(description="YYYY-MM-DD format")
     total_amount: float
@@ -74,11 +74,8 @@ def parse_receipt_text(image: str) -> ReceiptData:
     
     result = ReceiptData.model_validate_json(extract_json(response.text))
     result_text = result.model_dump_json(indent=2)
-    print("\n--- Gemini Parsed JSON ---")
-    print(result_text)
-    imgname = os.path.basename(image)
-    with open("../jsons/" + imgname + ".json","w") as f:
-        f.write(result_text)
+    #print("\n--- Gemini Parsed JSON ---")
+    #print(result_text)
        
     return result
 
@@ -90,6 +87,26 @@ def main():
         parse_receipt_text(target_image)
     else:
         print(f"Could not find image at {target_image}")
+
+
+
+#ID is automatically generated and incremented in PostgresSQL
+#Image_url is generate by S3 Buckets API
+def insertReceipt(receipt: ReceiptData,image_url):
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO receipts(merchant_name, date,total_amount,image_url)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (receipt.merchant_name,receipt.date,receipt.total_amount,image_url)
+                )
+        print("Receipt inserted!")
+    except Exception as e:
+        print(e)
+
 
 
 

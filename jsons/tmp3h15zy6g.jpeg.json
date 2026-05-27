@@ -1,41 +1,51 @@
 {
+  "id": "receipt_001",
   "merchant_name": "IHOP Store # 9005",
   "date": "2020-01-11",
   "total_amount": 71.4,
   "items": [
     {
+      "id": "item_001",
       "item_name": "Decaf",
       "price": 2.99
     },
     {
+      "id": "item_002",
       "item_name": "Decaf",
       "price": 2.99
     },
     {
+      "id": "item_003",
       "item_name": "Iced Tea",
       "price": 2.99
     },
     {
+      "id": "item_004",
       "item_name": "Iced Tea",
       "price": 2.99
     },
     {
+      "id": "item_005",
       "item_name": "Chx/Waffle",
       "price": 12.49
     },
     {
+      "id": "item_006",
       "item_name": "Country Oml",
       "price": 12.99
     },
     {
+      "id": "item_007",
       "item_name": "Cali Garlic Brgr",
       "price": 11.49
     },
     {
+      "id": "item_008",
       "item_name": "Cannoli 3",
       "price": 7.99
     },
     {
+      "id": "item_009",
       "item_name": "Nutella Crep 4",
       "price": 7.99
     }

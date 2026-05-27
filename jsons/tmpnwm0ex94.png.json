@@ -1,0 +1,23 @@
+{
+  "merchant_name": "T.J.Maxx - AURORA MARKETPLACE",
+  "date": "2024-12-06",
+  "total_amount": 49.68,
+  "items": [
+    {
+      "item_name": "MEN'S OUTERWEA 706712",
+      "price": 19.99
+    },
+    {
+      "item_name": "TABLE TOP 864126",
+      "price": 9.99
+    },
+    {
+      "item_name": "TABLE TOP 864126",
+      "price": 9.99
+    },
+    {
+      "item_name": "TABLE TOP 864741",
+      "price": 4.99
+    }
+  ]
+}

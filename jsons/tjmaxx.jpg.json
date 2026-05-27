@@ -1,0 +1,27 @@
+{
+  "merchant_name": "T.J. Maxx",
+  "date": "2025-12-21",
+  "total_amount": 340.21,
+  "items": [
+    {
+      "item_name": "CHILDREN'S ACC 060578",
+      "price": 6.99
+    },
+    {
+      "item_name": "CHILDREN'S ACC 060573",
+      "price": 6.99
+    },
+    {
+      "item_name": "CHILDREN'S ACC 060578",
+      "price": 6.99
+    },
+    {
+      "item_name": "HANDBAGS 010858",
+      "price": 149.99
+    },
+    {
+      "item_name": "HANDBAGS 010858",
+      "price": 149.99
+    }
+  ]
+}

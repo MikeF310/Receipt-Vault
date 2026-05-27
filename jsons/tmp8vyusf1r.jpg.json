@@ -1,0 +1,43 @@
+{
+  "merchant_name": "STOP&SHOP 341 PLYMOUTH STREET HALIFAX, MA 02338",
+  "date": "2020-04-07",
+  "total_amount": 35.01,
+  "items": [
+    {
+      "item_name": "JSPH ORG HUMMUS",
+      "price": 5.99
+    },
+    {
+      "item_name": "SB SW BLEND 10Z",
+      "price": 2.49
+    },
+    {
+      "item_name": "AMYS LS CHNKY TO",
+      "price": 3.99
+    },
+    {
+      "item_name": "AMYS SOUP LS LEN",
+      "price": 3.19
+    },
+    {
+      "item_name": "SOUP LENTIL",
+      "price": 3.99
+    },
+    {
+      "item_name": "SOUP LENTIL",
+      "price": 3.19
+    },
+    {
+      "item_name": "AMYS LS CHNKY TO",
+      "price": 3.99
+    },
+    {
+      "item_name": "AMYS LS CHNKY TO",
+      "price": 3.99
+    },
+    {
+      "item_name": "DOLE SPINACH 10",
+      "price": 4.99
+    }
+  ]
+}
