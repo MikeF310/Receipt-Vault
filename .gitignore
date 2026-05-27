@@ -1,5 +1,17 @@
 venv/
 .env
 db_config.env
-.terraform
-.tfstate
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Python
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
