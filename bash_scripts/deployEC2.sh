@@ -1,4 +1,5 @@
 #!/bin/bash
+source .env
 set -e
 
 # This script stands up EC2 and S3 Buckets
@@ -21,10 +22,13 @@ fi
 
 # 1. Build the fresh infrastructure
 echo "🚀 Starting EC2 and S3 via Terraform..."
-TF_LOG=INFO terraform apply -auto-approve
+
+export TF_VAR_github_token="$GITHUB_TOKEN"
+
+terraform apply -auto-approve
 
 # 2. Dynamically fetch the new IP assigned by AWS
-NEW_IP=$(terraform -chdir=".." terraform output -raw ec2_public_ip 2>/dev/null)
+NEW_IP=$(terraform output -raw ec2_public_ip 2>/dev/null)
 echo "✅ New EC2 Instance IP: $NEW_IP"
 
 # 3. Wait for Docker Compose to fully stand up inside the user_data boot cycle
@@ -45,6 +49,6 @@ echo "🔄 Restoring database snapshot..."
 ssh -i "$KEY_PATH" \
     -o StrictHostKeyChecking=no \
     -o UserKnownHostsFile=/dev/null \
-    "$REMOTE_USER@$NEW_IP" "docker exec -i receipt_postgres_db psql -U postgres -d receipts" < "$LOCAL_BACKUP"
+    "$REMOTE_USER@$NEW_IP" "sudo docker exec -i receipt_postgres_db psql -U postgres -d receipts" < "$LOCAL_BACKUP"
 
 echo "🎉 Migration complete! Your cloud architecture is completely restored."

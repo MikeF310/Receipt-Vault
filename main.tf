@@ -1,3 +1,11 @@
+# Add this at the top of main.tf
+variable "github_token" {
+  type        = string
+  description = "GitHub Personal Access Token for pulling private repositories"
+  sensitive   = true
+}
+
+
 # 1. AWS Provider Setup
 terraform {
   required_providers {
@@ -80,13 +88,12 @@ resource "aws_instance" "receipt_server" {
     }   
     user_data = <<-EOF
               #!/bin/bash
-              # Update packages and install prerequisites
               sudo apt-get update -y
               sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
               # Install Docker
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-              echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.p/docker.list > /dev/null
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
               sudo apt-get update -y
               sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
@@ -96,15 +103,13 @@ resource "aws_instance" "receipt_server" {
               chmod +x ~/.docker/cli-plugins/docker-compose
               sudo ln -s ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
-              # Clone application repository into the home directory
+              # Clone private repository utilizing the dynamic variable context
               cd /home/ubuntu
-              git clone https://github.com/yourusername/Receipt-Vault.git
+              git clone https://oauth2:${var.github_token}@github.com/MikeF310/Receipt-Vault.git
               cd Receipt-Vault
 
-              # Create a placeholder environment file so Docker Compose doesn't crash on boot
+              # Create environment baseline and boot cluster
               echo "GEMINI_API_KEY=placeholder_until_cicd" > .env
-
-              # Spin up the containers for the first time
               sudo docker-compose up -d
               EOF
 

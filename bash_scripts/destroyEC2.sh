@@ -18,20 +18,21 @@ fi
 
 echo "Starting automated backup for EC2 IP: $EC2_IP..."
 
-# 1. Trigger pg_dump inside the Docker container over SSH
-echo "Creating PostgreSQL dump inside remote container..."
-ssh -i "$KEY_PATH" \
-    -o StrictHostKeyChecking=no \
-    -o UserKnownHostsFile=/dev/null \
-    "$REMOTE_USER@$EC2_IP" "sudo docker exec -i receipt_postgres_db pg_dump -U postgres receipts" > "$LOCAL_BACKUP_DIR/$BACKUP_NAME"
+# # 1. Trigger pg_dump inside the Docker container over SSH
+# echo "Creating PostgreSQL dump inside remote container..."
+# ssh -i "$KEY_PATH" \
+#     -o StrictHostKeyChecking=no \
+#     -o UserKnownHostsFile=/dev/null \
+#     "$REMOTE_USER@$EC2_IP" "sudo docker exec -i receipt_postgres_db pg_dump -U postgres receipts" > "$LOCAL_BACKUP_DIR/$BACKUP_NAME"
 
-echo "Backup downloaded successfully to: $LOCAL_BACKUP_DIR/$BACKUP_NAME"
+# echo "Backup downloaded successfully to: $LOCAL_BACKUP_DIR/$BACKUP_NAME"
 
-# 2. Create a symlink to 'latest.sql' so the startup script always knows which file to use
-ln -sf "$BACKUP_NAME" "$LOCAL_BACKUP_DIR/latest.sql"
+# # 2. Create a symlink to 'latest.sql' so the startup script always knows which file to use
+# ln -sf "$BACKUP_NAME" "$LOCAL_BACKUP_DIR/latest.sql"
 
 # 3. Destroy the cloud infrastructure safely
 echo "Destroying AWS infrastructure with Terraform..."
+cd ..
 terraform destroy -auto-approve
 
 echo "Infrastructure torn down. Data is stored on the local machine."

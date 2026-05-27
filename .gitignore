@@ -1,3 +1,5 @@
 venv/
 .env
 db_config.env
+.terraform
+.tfstate
