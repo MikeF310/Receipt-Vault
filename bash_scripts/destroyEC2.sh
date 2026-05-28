@@ -35,6 +35,9 @@ ln -sf "$BACKUP_NAME" "$LOCAL_BACKUP_DIR/latest.sql"
 #3. Destroy the cloud infrastructure safely
 echo "Destroying AWS infrastructure with Terraform..."
 
+export TF_VAR_github_token="destroy-mode"
+export TF_VAR_github_user="destroy-mode"
+
 terraform -chdir="$SCRIPT_DIR/.." destroy -auto-approve
 
 echo "Infrastructure torn down. Data is stored on the local machine."

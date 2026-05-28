@@ -24,6 +24,7 @@ fi
 echo "🚀 Starting EC2 and S3 via Terraform..."
 
 export TF_VAR_github_token="$GITHUB_TOKEN"
+export TF_VAR_github_user="$GITHUB_USER"
 
 terraform apply -auto-approve
 

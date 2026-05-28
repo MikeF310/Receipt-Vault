@@ -5,6 +5,10 @@ variable "github_token" {
   sensitive   = true
 }
 
+variable "github_user" {
+  type        = string
+  description = "GitHub username used for building the repository clone URL"
+}
 
 # 1. AWS Provider Setup
 terraform {
@@ -105,7 +109,7 @@ resource "aws_instance" "receipt_server" {
 
                 # Clone private repository utilizing the dynamic variable context
                 cd /home/ubuntu
-                git clone https://oauth2:${var.github_token}@github.com/MikeF310/Receipt-Vault.git
+                git clone https://oauth2:${var.github_token}@github.com/${var.github_user}/Receipt-Vault.git
                 cd Receipt-Vault
             
 
