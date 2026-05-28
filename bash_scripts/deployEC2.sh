@@ -1,5 +1,8 @@
 #!/bin/bash
+set -a          # auto-export all variables
 source git.env
+
+set +a          # stop auto-exporting
 set -e
 
 # This script stands up EC2 and S3 Buckets
@@ -25,7 +28,8 @@ echo "🚀 Starting EC2 and S3 via Terraform..."
 
 export TF_VAR_github_token="$GITHUB_TOKEN"
 export TF_VAR_github_user="$GITHUB_USER"
-
+export TF_VAR_dockerhub_user="$DOCKER_USERNAME"
+export TF_VAR_dockerhub_token="$DOCKERHUB_TOKEN"
 terraform apply -auto-approve
 
 # 2. Dynamically fetch the new IP assigned by AWS
