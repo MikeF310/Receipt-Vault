@@ -29,7 +29,7 @@ jobs:
     - name: Build & Push Frontend Image
       uses: docker/build-push-action@v5
       with:
-        context: ./frontend # Points directly to your frontend subdirectory
+        context: ./Receipt_Upload # Points directly to your frontend subdirectory
         push: true
         tags: ${{ secrets.DOCKER_HUB_USERNAME }}/receipt-frontend:latest
 
