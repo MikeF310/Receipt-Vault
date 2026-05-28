@@ -2,98 +2,79 @@ name: Continuous Delivery Pipeline
 
 on:
   push:
-    branches: [ main ] # Triggers automatically every time you merge code into main
+    branches: [main]
 
 jobs:
-  build-and-ship:
+  build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    # 1. Pull down the latest commit code onto GitHub's cloud runner
-    - name: Checkout Source Code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    
-    - name: Debug secrets
-      run: |
-        echo "Username is set: ${{ secrets.DOCKER_HUB_USERNAME != '' }}"
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-    # 2. Authenticate against Docker Hub using the repository secrets
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Build & Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Receipt_Upload
+          push: true
+          tags: ${{ format('{0}/receipt-frontend:latest', secrets.DOCKER_HUB_USERNAME) }}
 
-    # 3. Compile and Push the Public Frontend Image
-    - name: Build & Push Frontend Image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./Receipt_Upload # Points directly to your frontend subdirectory
-        push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/receipt-frontend:latest
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ format('{0}/receipt-backend-private:latest', secrets.DOCKER_HUB_USERNAME) }}
 
-    # 4. Compile and Push the Private Backend Image
-    - name: Build & Push Backend Image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend # Points directly to your backend subdirectory
-        push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/receipt-backend-private:latest
+      - name: Fetch EC2 IP
+        run: |
+          EC2_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=receipt-vault-app-server" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
 
-    # 5. Set up the Terraform CLI tool on the cloud runner
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
-
-    # 6. Run Terraform, stands up AWS Services if they are down.
-    - name: Provision Infrastructure via Terraform
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        TF_VAR_github_token: ${{ secrets.AWS_GITHUB_PAT }}
-        TF_VAR_github_user: ${{ secrets.USER }}
-      run: |
-        terraform init
-        terraform apply -auto-approve
-
-    # 7. Grab the active server IP address dynamically
-    - name: Extract Target Host IP
-      id: fetch-ip
-      run: echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
-
-    # 8. Deploy the images straight onto your active hardware footprints via SSH
-    - name: Trigger Remote Container Hot-Swap
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ env.EC2_IP }}
-        username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          cd /home/ubuntu/Receipt-Vault
-          git pull # Grabs latest compose schema adjustments
-          sudo docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_TOKEN }}"
-          sudo docker compose pull
-          sudo docker compose up -d --remove-orphans
-
-          # --- If EC2 is fresh, restore DB. If not, keep DB. ---#
-
-          # Wait a few seconds for Postgres to fully boot up on the network
-          sleep 5
-
-          # Check if "receipts" table exists yet
-          TABLE_EXISTS=$(sudo docker exec -i receipt_postgres_db psql -U postgres -d receipts -tAc "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'receipts');")
-
-          if [ "$TABLE_EXISTS" = "f" ]; then
-            echo "Database is empty. Checking for backups..."
-            
-            # Look for the latest backup file that came along with git repo clone
-            if [ -f "./backups/latest.sql" ]; then
-              echo "Restoring database state from ./backups/latest.sql..."
-              sudo docker exec -i receipt_postgres_db psql -U postgres -d receipts < ./backups/latest.sql
-              echo "Database rebuilt"
+          if [ "$EC2_IP" = "None" ] || [ -z "$EC2_IP" ]; then
+            echo "EC2 is not running — skipping deployment. Images have been pushed to Docker Hub and will be pulled on next startup."
+            echo "EC2_RUNNING=false" >> $GITHUB_ENV
             else
-              echo "No backup file found at ./backups/latest.sql. Starting with a blank schema."
+              echo "Found EC2 at $EC2_IP"
+              echo "EC2_IP=$EC2_IP" >> $GITHUB_ENV
+              echo "EC2_RUNNING=true" >> $GITHUB_ENV
             fi
-          else
-            echo "Existing database tables detected. Skipping data restore to prevent overwriting active data."
-          fi
+        
+
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+
+      # - name: Update IONOS DNS A Record, this will dynamically change the IONOS DNS to point to the new EC2 IP.
+      #   if: env.EC2_RUNNING == 'true'
+      #   run: |
+      #     curl -X PATCH "https://api.hosting.ionos.com/dns/v1/zones/${{ secrets.IONOS_ZONE_ID }}/records/${{ secrets.IONOS_RECORD_ID }}" \
+      #       -H "X-API-Key: ${{ secrets.IONOS_PREFIX }}.${{ secrets.IONOS_SECRET }}" \
+      #       -H "Content-Type: application/json" \
+      #       -d "[{
+      #         \"name\": \"${{ secrets.DOMAIN_NAME }}\",
+      #         \"type\": \"A\",
+      #         \"content\": \"${{ env.EC2_IP }}\",
+      #         \"ttl\": 60,
+      #         \"disabled\": false
+      #       }]"
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/ubuntu/Receipt-Vault
+            git pull
+            sudo docker compose pull
+            sudo docker compose up -d --remove-orphans
