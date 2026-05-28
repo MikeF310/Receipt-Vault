@@ -10,6 +10,17 @@ variable "github_user" {
   description = "GitHub username used for building the repository clone URL"
 }
 
+variable "dockerhub_user"{
+  type = string
+  description ="Dockerhub username needed for pulling from dockerhub"
+}
+
+variable "dockerhub_token" {
+  type      = string
+  sensitive = true
+}
+
+
 # 1. AWS Provider Setup
 terraform {
   required_providers {
@@ -81,7 +92,6 @@ resource "aws_instance" "receipt_server" {
   ami           = "ami-0c7217cdde317cfec" # Standard Ubuntu 22.04 LTS AMI in us-east-1
   instance_type = "t3.micro"              # Free-tier eligible in us-east-1/us-east-2
   key_name      = "receipt-vault-key"     # Must exactly match the name of the Key Pair created in your AWS Console
-
   vpc_security_group_ids = [aws_security_group.receipt_app_sg.id]
 
   # Root block device setup utilizing free-tier gp3 storage
@@ -91,40 +101,53 @@ resource "aws_instance" "receipt_server" {
     delete_on_termination = true
     }   
     user_data = <<-EOF
-                #!/bin/bash
-                sudo apt-get update -y
-                sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
+      #!/bin/bash
+      set -e
 
-                # Install Docker
-                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-                echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-                sudo apt-get update -y
-                sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+      exec > >(tee /var/log/user-data.log|logger -t user-data ) 2>&1
 
-                # Install Docker Compose V2
-                mkdir -p ~/.docker/cli-plugins/
-                curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-                chmod +x ~/.docker/cli-plugins/docker-compose
-                sudo ln -s ~/.docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+      sudo apt-get update -y
+      sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common git
 
-                # Clone private repository utilizing the dynamic variable context
-                cd /home/ubuntu
-                git clone https://oauth2:${var.github_token}@github.com/${var.github_user}/Receipt-Vault.git
-                cd Receipt-Vault
-            
+      # Install Docker
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+      sudo apt-get update -y
+      sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-                # 1. Create the docker group if it doesn't exist
-                sudo groupadd -f docker
-                # 2. Assign the ubuntu user to the docker group
-                sudo usermod -aG docker ubuntu
-                # 3. Refresh the group ownership on the docker socket file dynamically
-                sudo chown root:docker /var/run/docker.sock
-                
-                # Create environment baseline and boot cluster
-                echo "GEMINI_API_KEY=placeholder_until_cicd" > .env
-                sudo docker-compose up -d
-                EOF
+      # Enable docker
+      sudo systemctl enable docker
+      sudo systemctl start docker
+
+      # Install Docker Compose
+      sudo curl -SL https://github.com/docker/compose/releases/download/v2.24.5/docker-compose-linux-x86_64 \
+        -o /usr/local/bin/docker-compose
+      sudo chmod +x /usr/local/bin/docker-compose
+
+      # Fix docker permissions
+      sudo groupadd -f docker
+      sudo usermod -aG docker ubuntu
+      sudo chown root:docker /var/run/docker.sock || true
+
+      # Go to home
+      cd /home/ubuntu
+
+      # Clone repo (FIXED auth format)
+      git clone https://${var.github_user}:${var.github_token}@github.com/${var.github_user}/Receipt-Vault.git
+
+      cd Receipt-Vault
+
+      # Create .env (ONLY ONCE, NO DUPLICATES)
+      cat > .env <<ENV
+      GEMINI_API_KEY=placeholder_until_cicd
+      DOCKER_USERNAME=${var.dockerhub_user}
+      ENV
+
+      # Start stack
+      echo "${var.dockerhub_token}" | docker login -u "${var.dockerhub_user}" --password-stdin
+      sudo docker-compose up -d
+      EOF
 
   tags = {
     Name = "receipt-vault-app-server"

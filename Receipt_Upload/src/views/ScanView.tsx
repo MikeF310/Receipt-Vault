@@ -178,7 +178,7 @@ export default function ScanView(){
                 className="w-full py-3 rounded bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 active:scale-[0.99] transition-all flex items-center justify-center gap-2"
               >
                 <Search className="w-4 h-4" />
-                Scan Recei
+                Scan Receipt
               </button>
             )}
 
