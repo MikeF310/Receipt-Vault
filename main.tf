@@ -20,7 +20,10 @@ variable "dockerhub_token" {
   sensitive = true
 }
 
-
+variable "gemini_key"{
+  type = string
+  sensitive = true
+}
 # 1. AWS Provider Setup
 terraform {
   required_providers {
@@ -140,13 +143,13 @@ resource "aws_instance" "receipt_server" {
 
       # Create .env (ONLY ONCE, NO DUPLICATES)
       cat > .env <<ENV
-      GEMINI_API_KEY=placeholder_until_cicd
+      GEMINI_API_KEY=${var.gemini_key}
       DOCKER_USERNAME=${var.dockerhub_user}
       ENV
 
       # Start stack
       echo "${var.dockerhub_token}" | docker login -u "${var.dockerhub_user}" --password-stdin
-      sudo docker-compose up -d
+      sudo docker compose -f docker-compose.yml -f docker-compose.prod.yml up
       EOF
 
   tags = {

@@ -1,0 +1,11 @@
+
+#Override file, pulls from dockerhub instead of using local files.
+services:
+  backend:
+    image: ${DOCKER_USERNAME}/receipt-backend-private:latest
+    build: null
+
+  frontend:
+    image: ${DOCKER_USERNAME}/receipt-frontend:latest
+    build: null
+

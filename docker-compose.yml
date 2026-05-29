@@ -16,7 +16,7 @@ services:
 
   # 2. FastAPI Backend Service
   backend:
-    image: ${DOCKER_USERNAME}/receipt-backend-private:latest
+    build: ./backend
     container_name: receipt_fastapi_backend
     ports:
       - "8000:8000"
@@ -30,7 +30,7 @@ services:
 
   # 3. React Frontend Service
   frontend:
-    image: ${DOCKER_USERNAME}/receipt-frontend:latest
+    build: ./Receipt_Upload
     container_name: receipt_frontend_app
     ports:
       - "3000:80"  # Maps port 3000 on your laptop to port 80 inside Nginx

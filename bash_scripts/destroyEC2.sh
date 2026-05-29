@@ -1,7 +1,6 @@
 #!/bin/bash
-set -a          # auto-export all variables
-source git.env
-
+set -a
+source ../.env
 set +a          # stop auto-exporting
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
